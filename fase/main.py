@@ -1,5 +1,4 @@
-
-from fastbase.core import app
+from fase.core import app
 
 
 def main():

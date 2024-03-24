@@ -4,7 +4,7 @@ from typing import Any, AsyncIterator, ForwardRef, Generic, Type, TypeVar
 import sqlalchemy
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from fastbase.core import db
+from fase.core import db
 
 CrudModel = TypeVar("CrudModel", bound=db.Base)
 _Crud = ForwardRef("Crud")

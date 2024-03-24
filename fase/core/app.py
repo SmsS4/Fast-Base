@@ -3,7 +3,7 @@ from typing import List, Union
 import fastapi
 import uvicorn
 
-from fastbase.core import config, db
+from fase.core import config, db
 
 
 class FastBase:

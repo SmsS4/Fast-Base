@@ -1,12 +1,12 @@
-[default.fastbase]
+[default.fase]
 openapi_url = ''
 prefix = 'v1'
 
-[default.fastbase_uvicorn]
+[default.uvicorn]
 host = "0.0.0.0"
 port = 8000
 
-[default.fastbase_db]
+[default.db]
 host = "localhost"
 port = "5432"
 username = "postgres"

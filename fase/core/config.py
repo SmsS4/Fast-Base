@@ -26,7 +26,7 @@ class AppConfig:
 
 def from_toml(paths: List[str]) -> AppConfig:
     settings = dynaconf.Dynaconf(
-        envvar_prefix="FASTBASE",
+        envvar_prefix="FASE",
         settings_files=paths,
         environments=True,
         lowercase_read=False,
@@ -34,31 +34,31 @@ def from_toml(paths: List[str]) -> AppConfig:
         auto_cast=True,
     )
     extra = {}
-    if "FASTBASE_CORS" in settings.keys():
+    if "FASE_CORS" in settings.keys():
         extra.update(
             {
                 "cors_middleware": True,
-                "cors_allow_origins": settings.FASTBASE_CORS.allow_origins,
-                "cors_allow_methods": settings.FASTBASE_CORS.allow_methods,
-                "cors_allow_headers": settings.FASTBASE_CORS.allow_headers,
+                "cors_allow_origins": settings.FASE_CORS.allow_origins,
+                "cors_allow_methods": settings.FASE_CORS.allow_methods,
+                "cors_allow_headers": settings.FASE_CORS.allow_headers,
             }
         )
     else:
         extra.update({"cors_middleware": False})
-    if "FASTBASE_UVICORN" in settings.keys():
+    if "FASE_UVICORN" in settings.keys():
         extra.update(
             {
-                "uvicorn_host": settings.FASTBASE_UVICORN.get("host", None),
-                "uvicorn_port": settings.FASTBASE_UVICORN.get("port", None),
+                "uvicorn_host": settings.FASE_UVICORN.get("host", None),
+                "uvicorn_port": settings.FASE_UVICORN.get("port", None),
             }
         )
     return AppConfig(
-        openapi_url=settings.FASTBASE.openapi_url,
-        prefix=settings.FASTBASE.prefix,
-        db_host=settings.FASTBASE_DB.host,
-        db_port=settings.FASTBASE_DB.port,
-        db_name=settings.FASTBASE_DB.name,
-        db_username=settings.FASTBASE_DB.username,
-        db_password=settings.FASTBASE_DB.password,
+        openapi_url=settings.FASE.openapi_url,
+        prefix=settings.FASE.prefix,
+        db_host=settings.FASE_DB.host,
+        db_port=settings.FASE_DB.port,
+        db_name=settings.FASE_DB.name,
+        db_username=settings.FASE_DB.username,
+        db_password=settings.FASE_DB.password,
         **extra,
     )

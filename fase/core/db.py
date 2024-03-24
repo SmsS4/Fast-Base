@@ -6,8 +6,8 @@ from sqlalchemy.ext.asyncio import (AsyncEngine, AsyncSession,
                                     async_sessionmaker, create_async_engine)
 from sqlalchemy.orm import DeclarativeBase
 
-from fastbase import singletone
-from fastbase.core import config
+from fase import singletone
+from fase.core import config
 
 
 def get_url(username: str, password: str, host: str, port, name: str) -> str:
