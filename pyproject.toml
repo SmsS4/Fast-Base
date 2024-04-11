@@ -1,16 +1,19 @@
 [tool.poetry]
 name = "fase"
-version = "0.0.2"
+version = "0.0.3"
 description = ""
 authors = ["SmsS4 <smss.lite@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.10"
 fastapi = "^0.110.0"
 uvicorn = "^0.29.0"
 sqlalchemy = "^2.0.29"
 dynaconf = "^3.2.5"
+typing-inspect = "^0.9.0"
+asyncpg = "^0.29.0"
+authx = "^1.1.0"
 
 
 [build-system]

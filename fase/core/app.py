@@ -1,13 +1,21 @@
+from contextlib import asynccontextmanager
 from typing import List, Union
 
 import fastapi
 import uvicorn
+from fastapi.middleware import cors
+from sqlalchemy.ext.asyncio import AsyncEngine
 
-from fase.core import config, db
+from fase.core import config
+from fase.db import connection
 
 
 class FastBase:
-    def __init__(self, settings: Union[str, List[str], config.AppConfig]):
+    def __init__(
+        self,
+        settings: Union[str, List[str], config.AppConfig],
+        engine: AsyncEngine | None = None,
+    ):
         if isinstance(settings, str):
             self.settings = config.from_toml([settings])
         elif isinstance(settings, list):
@@ -21,18 +29,29 @@ class FastBase:
             openapi_url=self.settings.openapi_url,
         )
         if self.settings.cors_middleware:
-            from fastapi.middleware import cors
+            self.add_cors()
 
-            self.fast_app.add_middleware(
-                cors.CORSMiddleware,
-                allow_origins=self.settings.cors_allow_origins,
-                allow_credentials=True,
-                allow_methods=self.settings.cors_allow_methods,
-                allow_headers=self.settings.cors_allow_headers,
-            )
+        if engine:
+            connection.set_engine(engine)
+        else:
+            connection.config_db(self.settings)
 
-        db.config_db(settings)
+    def add_cors(self):
+        if self.settings.cors_allow_origins is None:
+            raise ValueError("cors_allow_origins is None")
+        if self.settings.cors_allow_methods is None:
+            raise ValueError("cors_allow_methods is None")
+        if self.settings.cors_allow_headers is None:
+            raise ValueError("cors_allow_headers is None")
+        self.fast_app.add_middleware(
+            cors.CORSMiddleware,
+            allow_origins=self.settings.cors_allow_origins,
+            allow_credentials=True,
+            allow_methods=self.settings.cors_allow_methods,
+            allow_headers=self.settings.cors_allow_headers,
+        )
 
+    @asynccontextmanager
     async def lifespan(self, _):
         yield
 
