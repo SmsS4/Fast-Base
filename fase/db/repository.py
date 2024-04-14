@@ -21,10 +21,11 @@ class Repository(Generic[RepositoryModel]):
 
     def __init__(
         self,
-        model_class: Type[RepositoryModel] | None = model_class,
+        model_class: Type[RepositoryModel] | None = None,
         session: AsyncSession | None = None,
     ):
         self._session = session
+        model_class = model_class if model_class else self.model_class
         if model_class is None:
             raise TypeError(
                 "model_class should be set in __init__ or as a class static variable"

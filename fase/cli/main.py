@@ -1,9 +1,11 @@
 import os
 
-TEMPLATES_PATH = os.path.join(__file__, "templates")
+TEMPLATES_PATH = os.path.join(__file__[: -len("main.py")], "templates")
 
 
 def cp(src: str, dst: str) -> None:
+    if os.path.exists(dst):
+        raise ValueError(f"{dst} already exists")
     with open(src, "rb") as src_fd:
         with open(dst, "wb") as dst_fd:
             dst_fd.write(src_fd.read())
@@ -12,6 +14,7 @@ def cp(src: str, dst: str) -> None:
 def create_alembic(path: str, name: str):
     alembic_path = os.path.join(path, name)
     os.makedirs(alembic_path)
+    os.makedirs(os.path.join(alembic_path, "versions"))
     cp(
         os.path.join(TEMPLATES_PATH, "alembic.ini"),
         os.path.join(path, "alembic.ini"),

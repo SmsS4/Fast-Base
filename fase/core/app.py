@@ -1,5 +1,5 @@
 from contextlib import asynccontextmanager
-from typing import List, Union
+from typing import AsyncGenerator
 
 import fastapi
 import uvicorn
@@ -13,8 +13,9 @@ from fase.db import connection
 class FastBase:
     def __init__(
         self,
-        settings: Union[str, List[str], config.AppConfig],
+        settings: str | list[str] | config.AppConfig,
         engine: AsyncEngine | None = None,
+        lifespan: AsyncGenerator[None, None] | None = None,
     ):
         if isinstance(settings, str):
             self.settings = config.from_toml([settings])
@@ -25,30 +26,23 @@ class FastBase:
         else:
             raise TypeError(f"unknown type {type(settings)} for settings")
         self.fast_app = fastapi.FastAPI(
-            lifespan=self.lifespan,
+            lifespan=lifespan if lifespan else self.lifespan,
             openapi_url=self.settings.openapi_url,
         )
-        if self.settings.cors_middleware:
-            self.add_cors()
-
+        if self.settings.cors:
+            self.add_cors(self.settings.cors)
         if engine:
             connection.set_engine(engine)
-        else:
-            connection.config_db(self.settings)
+        elif self.settings.db:
+            connection.config_db(self.settings.db)
 
-    def add_cors(self):
-        if self.settings.cors_allow_origins is None:
-            raise ValueError("cors_allow_origins is None")
-        if self.settings.cors_allow_methods is None:
-            raise ValueError("cors_allow_methods is None")
-        if self.settings.cors_allow_headers is None:
-            raise ValueError("cors_allow_headers is None")
+    def add_cors(self, cors_config: config.CorsConfig):
         self.fast_app.add_middleware(
             cors.CORSMiddleware,
-            allow_origins=self.settings.cors_allow_origins,
+            allow_origins=cors_config.allow_origins,
             allow_credentials=True,
-            allow_methods=self.settings.cors_allow_methods,
-            allow_headers=self.settings.cors_allow_headers,
+            allow_methods=cors_config.allow_methods,
+            allow_headers=cors_config.allow_headers,
         )
 
     @asynccontextmanager
@@ -56,8 +50,10 @@ class FastBase:
         yield
 
     def run(self):
+        if self.settings.uvicorn is None:
+            raise ValueError("set uvicorn settings")
         uvicorn.run(
             app=self.fast_app,
-            host=self.settings.uvicorn_host,
-            port=self.settings.uvicorn_port,
+            host=self.settings.uvicorn.host,
+            port=self.settings.uvicorn.port,
         )

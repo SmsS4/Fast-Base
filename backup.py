@@ -1,4 +1,4 @@
-from collections.abc import AsyncGenerator
+from typing import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Union
 

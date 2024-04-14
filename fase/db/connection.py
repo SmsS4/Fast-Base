@@ -2,10 +2,12 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 from sqlalchemy import exc
-from sqlalchemy.ext.asyncio import async_sessionmaker
-from sqlalchemy.ext.asyncio import AsyncEngine
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 
 from fase.core import config
 
@@ -38,6 +40,19 @@ def get_url(username: str, password: str, host: str, port, name: str) -> str:
     return f"postgresql+asyncpg://{username}:{password}@{host}:{port}/{name}"
 
 
+def get_url_from_config(paths: list[str]) -> str:
+    cfg = config.from_toml(paths)
+    if cfg.db is None:
+        raise ValueError("set db in config")
+    return get_url(
+        cfg.db.username,
+        cfg.db.password,
+        cfg.db.host,
+        cfg.db.port,
+        cfg.db.name,
+    )
+
+
 def create_engine(url: str) -> AsyncEngine:
     return create_async_engine(
         url,
@@ -47,25 +62,14 @@ def create_engine(url: str) -> AsyncEngine:
 
 
 def config_db(
-    settings: config.AppConfig,
+    settings: config.DBConfig,
 ) -> None:
-    if settings.db_username is None:
-        raise ValueError("db username is None")
-    if settings.db_password is None:
-        raise ValueError("db password is None")
-    if settings.db_host is None:
-        raise ValueError("db host is None")
-    if settings.db_port is None:
-        raise ValueError("db port is None")
-    if settings.db_name is None:
-        raise ValueError("db name is None")
-
     url = get_url(
-        settings.db_username,
-        settings.db_password,
-        settings.db_host,
-        settings.db_port,
-        settings.db_name,
+        settings.username,
+        settings.password,
+        settings.host,
+        settings.port,
+        settings.name,
     )
     engine = create_engine(url)
     set_engine(engine)
