@@ -1,5 +1,5 @@
-import os
-
+import os, typer
+from typing import  Annotated
 TEMPLATES_PATH = os.path.join(__file__[: -len("main.py")], "templates")
 
 
@@ -31,3 +31,12 @@ def create_alembic(path: str, name: str):
         os.path.join(TEMPLATES_PATH, "script.py.mako"),
         os.path.join(alembic_path, "script.py.mako"),
     )
+
+cli = typer.Typer()
+
+@cli.command(name='alembic')
+def alembic(path: Annotated[str, typer.Argument(help='path to create alembic')], name: Annotated[str, typer.Argument(help='name of alembic folder')] = 'migrations'):
+    """
+    Init alembic
+    """
+    create_alembic(path, name)

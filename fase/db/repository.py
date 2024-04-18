@@ -1,12 +1,20 @@
 from contextlib import asynccontextmanager
-from typing import Any, AsyncGenerator, Generic, Sequence, Type, TypeVar
+from typing import Any
+from typing import AsyncGenerator
+from typing import Generic
+from typing import Sequence
+from typing import Type
+from typing import TypeVar
 
+import fastapi
 import sqlalchemy
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import DeclarativeBase
 
 from fase.db import connection
+from fase.db import deps
 
+T = TypeVar("T", bound="Repository")
 RepositoryModel = TypeVar("RepositoryModel", bound=DeclarativeBase)
 RepositoryClass = TypeVar("RepositoryClass", bound="Repository")
 
@@ -32,6 +40,15 @@ class Repository(Generic[RepositoryModel]):
             )
         self._model_class: Type[RepositoryModel] = model_class
 
+    @classmethod
+    def dep(cls: Type[T], model_class: Type[RepositoryModel] | None = None):
+        async def dependency(session: deps.Session):
+            crud = cls(session=session, model_class=model_class)
+            yield crud
+            await crud.commit()
+
+        return fastapi.Depends(dependency)
+
     @property
     def session(self) -> AsyncSession:
         if self._session is None:
@@ -46,9 +63,11 @@ class Repository(Generic[RepositoryModel]):
         else:
             async with connection.session() as session:
                 self._session = session
-                yield self
-                await self.close()
-                self._session = None
+                try:
+                    yield self
+                finally:
+                    await self.close()
+                    self._session = None
 
     async def commit(self):
         await self.session.commit()
@@ -60,11 +79,11 @@ class Repository(Generic[RepositoryModel]):
     async def refresh(self, model: RepositoryModel):
         await self.session.refresh(model)
 
-    async def create_model(self, **kwargs) -> RepositoryModel:
+    def create_model(self, **kwargs) -> RepositoryModel:
         model = self._model_class(**kwargs)
-        return await self.create(model)
+        return self.create(model)
 
-    async def create(self, data: RepositoryModel) -> RepositoryModel:
+    def create(self, data: RepositoryModel) -> RepositoryModel:
         self.session.add(data)
         return data
 

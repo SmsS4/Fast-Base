@@ -2,12 +2,10 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 from sqlalchemy import exc
-from sqlalchemy.ext.asyncio import (
-    AsyncEngine,
-    AsyncSession,
-    async_sessionmaker,
-    create_async_engine,
-)
+from sqlalchemy.ext.asyncio import async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncEngine
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import create_async_engine
 
 from fase.core import config
 
@@ -32,44 +30,38 @@ async def session(
         await db_session.close()
 
 
-def set_engine(engine: AsyncEngine) -> None:
-    sessionmaker.configure(bind=engine)
+class ConnectionConfigure:
+    ENGINE: AsyncEngine | None = None
 
+    def __init__(
+        self,
+        settings: config.DBConfig | str | None = None,
+    ) -> None:
+        if isinstance(settings, str):
+            self.url = settings
+        elif isinstance(settings, config.DBConfig):
+            self.url = settings.get_url()
+        elif settings is None:
+            self.url = None
+        else:
+            raise TypeError(f"unknown type {type(settings)} for settings")
 
-def get_url(username: str, password: str, host: str, port, name: str) -> str:
-    return f"postgresql+asyncpg://{username}:{password}@{host}:{port}/{name}"
+    def create_engine(self) -> AsyncEngine:
+        if self.url is None:
+            raise ValueError("url is empty")
+        return create_async_engine(
+            self.url,
+            pool_recycle=1800,
+            pool_pre_ping=True,
+        )
 
+    def set_engine(self, engine: AsyncEngine) -> None:
+        self.ENGINE = engine
+        sessionmaker.configure(bind=engine)
 
-def get_url_from_config(paths: list[str]) -> str:
-    cfg = config.from_toml(paths)
-    if cfg.db is None:
-        raise ValueError("set db in config")
-    return get_url(
-        cfg.db.username,
-        cfg.db.password,
-        cfg.db.host,
-        cfg.db.port,
-        cfg.db.name,
-    )
+    def create_and_set_engine(self) -> None:
+        self.set_engine(self.create_engine())
 
-
-def create_engine(url: str) -> AsyncEngine:
-    return create_async_engine(
-        url,
-        pool_recycle=1800,
-        pool_pre_ping=True,
-    )
-
-
-def config_db(
-    settings: config.DBConfig,
-) -> None:
-    url = get_url(
-        settings.username,
-        settings.password,
-        settings.host,
-        settings.port,
-        settings.name,
-    )
-    engine = create_engine(url)
-    set_engine(engine)
+    @classmethod
+    def get_engine(cls) -> AsyncEngine | None:
+        return cls.ENGINE

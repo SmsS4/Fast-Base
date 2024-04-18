@@ -1,10 +1,8 @@
-from contextlib import asynccontextmanager
-from typing import AsyncGenerator
-
 import fastapi
 import uvicorn
 from fastapi.middleware import cors
 from sqlalchemy.ext.asyncio import AsyncEngine
+from starlette import types
 
 from fase.core import config
 from fase.db import connection
@@ -15,26 +13,26 @@ class FastBase:
         self,
         settings: str | list[str] | config.AppConfig,
         engine: AsyncEngine | None = None,
-        lifespan: AsyncGenerator[None, None] | None = None,
+        lifespan: types.Lifespan | None = None,
     ):
         if isinstance(settings, str):
-            self.settings = config.from_toml([settings])
+            self.settings = config.TomlFileDynaConfConfigBuilder([settings]).build()
         elif isinstance(settings, list):
-            self.settings = config.from_toml(settings)
+            self.settings = config.TomlFileDynaConfConfigBuilder(settings).build()
         elif isinstance(settings, config.AppConfig):
             self.settings = settings
         else:
             raise TypeError(f"unknown type {type(settings)} for settings")
         self.fast_app = fastapi.FastAPI(
-            lifespan=lifespan if lifespan else self.lifespan,
-            openapi_url=self.settings.openapi_url,
+            lifespan=lifespan,
+            docs_url=self.settings.docs_url,
         )
         if self.settings.cors:
             self.add_cors(self.settings.cors)
         if engine:
-            connection.set_engine(engine)
+            connection.ConnectionConfigure().set_engine(engine)
         elif self.settings.db:
-            connection.config_db(self.settings.db)
+            connection.ConnectionConfigure(self.settings.db).create_and_set_engine()
 
     def add_cors(self, cors_config: config.CorsConfig):
         self.fast_app.add_middleware(
@@ -44,10 +42,6 @@ class FastBase:
             allow_methods=cors_config.allow_methods,
             allow_headers=cors_config.allow_headers,
         )
-
-    @asynccontextmanager
-    async def lifespan(self, _):
-        yield
 
     def run(self):
         if self.settings.uvicorn is None:

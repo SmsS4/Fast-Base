@@ -1,16 +1,40 @@
+import abc
+import enum
 from dataclasses import dataclass
-from typing import List
 
 import dynaconf
 
 
+class DBType(enum.StrEnum):
+    SQLITE = "sqlite"
+    POSTGRES = "postgres"
+
+
 @dataclass
-class DBConfig:
+class DBConfig(abc.ABC):
+    @abc.abstractmethod
+    def get_url(self) -> str:
+        pass
+
+
+@dataclass
+class PostgresConfig(DBConfig):
     host: str
     port: str
     name: str
     username: str
     password: str
+
+    def get_url(self) -> str:
+        return f"postgresql+asyncpg://{self.username}:{self.password}@{self.host}:{self.port}/{self.name}"
+
+
+@dataclass
+class SqliteConfig(DBConfig):
+    path: str
+
+    def get_url(self) -> str:
+        return f"sqlite+aiosqlite:///{self.path}"
 
 
 @dataclass
@@ -28,57 +52,85 @@ class UvicornConfig:
 
 @dataclass
 class AppConfig:
-    openapi_url: str | None = None
+    docs_url: str | None = None
     prefix: str | None = None
+    db_type: DBType | None = None
     db: DBConfig | None = None
     cors: CorsConfig | None = None
     uvicorn: UvicornConfig | None = None
 
 
-def db_from_settings(settings: dynaconf.Dynaconf) -> DBConfig | None:
-    if "DB" not in settings.keys():
-        return None
-    return DBConfig(
-        host=settings.DB.host,
-        port=settings.DB.port,
-        name=settings.DB.name,
-        username=settings.DB.username,
-        password=settings.DB.password,
-    )
+class DynaConfConfigBuilder:
+    def __init__(self, settings=dynaconf.base.Settings) -> None:
+        self.settings = settings
+
+    def build(self) -> AppConfig:
+        if "DB" not in self.settings.keys():
+            db_config = None
+            db_type = None
+        elif self.settings.DB.type == DBType.POSTGRES:
+            db_type = DBType.POSTGRES
+            db_config = self.db_postgres_from_config()
+        elif self.settings.DB.type == DBType.SQLITE:
+            db_type = DBType.SQLITE
+            db_config = self.db_sqlite_from_config()
+        else:
+            raise ValueError(f"unknown db type {self.settings.DB.type}")
+
+        return AppConfig(
+            docs_url=self.settings.FASE.docs_url,
+            prefix=self.settings.FASE.prefix,
+            db=db_config,
+            db_type=db_type,
+            uvicorn=self.uvicorn_from_settings(),
+            cors=self.cors_from_settings(),
+        )
+
+    def db_postgres_from_config(self) -> PostgresConfig:
+        return PostgresConfig(
+            host=self.settings.DB.host,
+            port=self.settings.DB.port,
+            name=self.settings.DB.name,
+            username=self.settings.DB.username,
+            password=self.settings.DB.password,
+        )
+
+    def db_sqlite_from_config(self) -> SqliteConfig:
+        return SqliteConfig(
+            path=self.settings.DB.path,
+        )
+
+    def cors_from_settings(self) -> CorsConfig | None:
+        if "CORS" not in self.settings.keys():
+            return None
+        return CorsConfig(
+            allow_origins=self.settings.CORS.allow_origins,
+            allow_methods=self.settings.CORS.allow_methods,
+            allow_headers=self.settings.CORS.allow_headers,
+        )
+
+    def uvicorn_from_settings(self) -> UvicornConfig | None:
+        if "UVICORN" not in self.settings.keys():
+            return None
+        return UvicornConfig(
+            host=self.settings.UVICORN.host,
+            port=self.settings.UVICORN.port,
+        )
 
 
-def cors_from_settings(settings: dynaconf.Dynaconf) -> CorsConfig | None:
-    if "CORS" not in settings.keys():
-        return None
-    return CorsConfig(
-        allow_origins=settings.CORS.allow_origins,
-        allow_methods=settings.CORS.allow_methods,
-        allow_headers=settings.CORS.allow_headers,
-    )
+class TomlFileDynaConfConfigBuilder:
+    def __init__(self, paths: list[str]) -> None:
+        self.paths = paths
 
+    def build(self) -> AppConfig:
+        return DynaConfConfigBuilder(self.from_toml(self.paths)).build()
 
-def uvicorn_from_settings(settings: dynaconf.Dynaconf) -> UvicornConfig | None:
-    if "UVICORN" not in settings.keys():
-        return None
-    return UvicornConfig(
-        host=settings.UVICORN.host,
-        port=settings.UVICORN.port,
-    )
-
-
-def from_toml(paths: List[str]) -> AppConfig:
-    settings = dynaconf.Dynaconf(
-        envvar_prefix="FASE",
-        settings_files=paths,
-        environments=True,
-        lowercase_read=False,
-        load_dotenv=True,
-        auto_cast=True,
-    )
-    return AppConfig(
-        openapi_url=settings.FASE.openapi_url,
-        prefix=settings.FASE.prefix,
-        db=db_from_settings(settings),
-        uvicorn=uvicorn_from_settings(settings),
-        cors=cors_from_settings(settings),
-    )
+    def from_toml(self, paths: list[str]) -> dynaconf.base.Settings:
+        return dynaconf.Dynaconf(
+            envvar_prefix="FASE",
+            settings_files=paths,
+            environments=True,
+            lowercase_read=False,
+            load_dotenv=True,
+            auto_cast=True,
+        )

@@ -1,5 +1,5 @@
 [default.fase]
-openapi_url = ''
+docs_url = '/docs'
 prefix = 'v1'
 
 [default.uvicorn]
@@ -7,6 +7,7 @@ host = "0.0.0.0"
 port = 8000
 
 [default.db]
+type = "postgres"
 host = "localhost"
 port = "5432"
 username = "postgres"

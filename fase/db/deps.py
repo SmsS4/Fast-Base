@@ -5,4 +5,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from fase.db import connection
 
-Session = Annotated[AsyncSession, fastapi.Depends(connection.session)]
+async def session_dep():
+    async with connection.session() as session:
+        yield session
+
+
+Session = Annotated[AsyncSession, fastapi.Depends(session_dep)]
