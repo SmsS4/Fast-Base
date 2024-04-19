@@ -1,4 +1,5 @@
 import logging.handlers
+import os
 import re
 import sys
 
@@ -69,6 +70,8 @@ class ColorizedArgsFormatter(logging.Formatter):
         record.args = []
 
     def format(self, record):
+        record.name = f"[{record.name}]".ljust(17)
+        record.levelname = f"[{record.levelname}]".ljust(10)
         orig_msg = record.msg
         orig_args = record.args
         formatter = self.level_to_formatter.get(record.levelno)
@@ -124,28 +127,39 @@ class BraceFormatStyleFormatter(logging.Formatter):
         return formatted
 
 
-def init_logging():
+def add_file_handler(level: int | str, path: str):
     root_logger = logging.getLogger()
-    root_logger.setLevel(logging.DEBUG)
-
-    console_level = "INFO"
-    console_handler = logging.StreamHandler(stream=sys.stdout)
-    console_handler.setLevel(console_level)
-    console_format = "%(asctime)s - %(name)25s - %(levelname)8s - %(message)s - %(funcName)s - %(lineno)d"
-    colored_formatter = ColorizedArgsFormatter(console_format)
-    console_handler.setFormatter(colored_formatter)
-    root_logger.addHandler(console_handler)
-
-    file_handler = logging.FileHandler("app.log")
-    file_level = "DEBUG"
-    file_handler.setLevel(file_level)
+    level_name = logging.getLevelName(level)
+    file_handler = logging.handlers.RotatingFileHandler(
+        os.path.join(path, f"{level_name}.log"),
+        maxBytes=5 * 1024 * 1024,
+        backupCount=5,
+    )
+    file_handler.setLevel(level)
     file_format = "%(asctime)s - %(name)25s - %(levelname)8s - %(message)s - %(funcName)s - %(lineno)d - %(threadName)-12s"
     file_handler.setFormatter(BraceFormatStyleFormatter(file_format))
     root_logger.addHandler(file_handler)
 
 
+def init_logging(level: int | str, file_path: str = "/tmp"):
+    root_logger = logging.getLogger()
+    root_logger.handlers.clear()
+    root_logger.setLevel(level)
+
+    console_level = level
+    console_handler = logging.StreamHandler(stream=sys.stdout)
+    console_handler.setLevel(console_level)
+    console_format = "[%(asctime)s]  %(name)s %(levelname)-8s  %(message)s [%(funcName)s::%(lineno)d]"
+    colored_formatter = ColorizedArgsFormatter(console_format)
+    console_handler.setFormatter(colored_formatter)
+    root_logger.addHandler(console_handler)
+
+    add_file_handler(logging.DEBUG, path=file_path)
+    add_file_handler(logging.INFO, path=file_path)
+    add_file_handler(logging.WARNING, path=file_path)
+    add_file_handler(logging.ERROR, path=file_path)
+
+
 def get_logger(name: str) -> logging.Logger:
-    return logging.getLogger(name)
-
-
-init_logging()
+    logger = logging.getLogger(name)
+    return logger
