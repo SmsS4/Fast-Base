@@ -6,6 +6,11 @@ from sqlalchemy import orm as so
 from fase import db
 
 
+class User(db.Base, db.ClassNameAsTableName):
+    username: so.Mapped[str] = so.mapped_column(primary_key=True)
+    password: so.Mapped[str] = so.mapped_column()
+
+
 class Note(db.Base):
     __tablename__ = "notes"
 
@@ -18,7 +23,7 @@ class Note(db.Base):
     tags: so.Mapped[list["Tag"]] = so.relationship(back_populates="note")
 
 
-class Tag(db.TimeStampBase):
+class Tag(db.Base, db.TimeStamp):
     __tablename__ = "tags"
     id: so.Mapped[uuid.UUID] = so.mapped_column(
         sa.UUID(),
