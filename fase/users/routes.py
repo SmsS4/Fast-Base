@@ -23,14 +23,9 @@ router = fastapi.APIRouter()
 async def login(login_form: LoginForm, user_manager: deps.UserManager) -> LoginResponse:
     if not await user_manager.validate_user(login_form.username, login_form.password):
         raise fastapi.HTTPException(status_code=fastapi.status.HTTP_403_FORBIDDEN)
-    cfg = user_manager.auth.config
     return LoginResponse(
         access_token=user_manager.create_access_token(login_form.username),
         refresh_token=user_manager.create_refresh_token(login_form.username),
-        access_expire_time=cfg.JWT_ACCESS_TOKEN_EXPIRES.seconds
-        if cfg.JWT_ACCESS_TOKEN_EXPIRES
-        else None,
-        refresh_expire_time=cfg.JWT_REFRESH_TOKEN_EXPIRES.seconds
-        if cfg.JWT_REFRESH_TOKEN_EXPIRES
-        else None,
+        access_expire_time=user_manager.access_token_expire_time.seconds,
+        refresh_expire_time=user_manager.refresh_token_expire_time.seconds,
     )

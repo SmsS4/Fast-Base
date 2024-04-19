@@ -29,10 +29,10 @@ class Repository(Generic[RepositoryModel]):
 
     def __init__(
         self,
+        session: AsyncSession,
         model_class: Type[RepositoryModel] | None = None,
-        session: AsyncSession | None = None,
     ):
-        self._session = session
+        self.session = session
         model_class = model_class if model_class else self.model_class
         if model_class is None:
             raise TypeError(
@@ -49,25 +49,25 @@ class Repository(Generic[RepositoryModel]):
 
         return fastapi.Depends(dependency)
 
-    @property
-    def session(self) -> AsyncSession:
-        if self._session is None:
-            raise ValueError("session is None")
-        return self._session
+    # @property
+    # def session(self) -> AsyncSession:
+    #     if self._session is None:
+    #         raise ValueError("session is None")
+    #     return self._session
 
-    @asynccontextmanager
-    async def begin(self: RepositoryClass) -> AsyncGenerator[RepositoryClass, None]:
-        if self._session is not None:
-            yield self
-            await self.commit()
-        else:
-            async with connection.session() as session:
-                self._session = session
-                try:
-                    yield self
-                finally:
-                    await self.close()
-                    self._session = None
+    # @asynccontextmanager
+    # async def begin(self: RepositoryClass) -> AsyncGenerator[RepositoryClass, None]:
+    #     if self._session is not None:
+    #         yield self
+    #         await self.commit()
+    #     else:
+    #         async with connection.session() as session:
+    #             self._session = session
+    #             try:
+    #                 yield self
+    #             finally:
+    #                 await self.close()
+    #                 self._session = None
 
     async def commit(self):
         await self.session.commit()

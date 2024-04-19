@@ -1,9 +1,12 @@
+from typing import Any, Callable
+
 import fastapi
 import uvicorn
 from fastapi.middleware import cors
 from sqlalchemy.ext.asyncio import AsyncEngine
 from starlette import types
 
+from fase import users
 from fase.core import config
 from fase.db import connection
 
@@ -51,3 +54,11 @@ class FastBase:
             host=self.settings.uvicorn.host,
             port=self.settings.uvicorn.port,
         )
+
+    def set_user_manager(
+        self,
+        user_manager_callable: Callable[..., Any],
+    ):
+        self.fast_app.dependency_overrides[
+            users.deps.get_user_manager
+        ] = user_manager_callable
