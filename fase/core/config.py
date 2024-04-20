@@ -69,7 +69,6 @@ class UvicornConfig:
 @dataclass
 class AppConfig:
     docs_url: str | None = None
-    prefix: str | None = None
     db_type: DBType | None = None
     db: DBConfig | None = None
     cors: CorsConfig | None = None
@@ -95,7 +94,6 @@ class DynaConfConfigBuilder:
 
         return AppConfig(
             docs_url=self.settings.FASE.docs_url,
-            prefix=self.settings.FASE.prefix,
             db=db_config,
             db_type=db_type,
             uvicorn=self.uvicorn_from_settings(),

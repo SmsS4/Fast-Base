@@ -1,6 +1,5 @@
 [default.fase]
 docs_url = '/swagger'
-prefix = 'v1'
 
 [default.uvicorn]
 host = "0.0.0.0"
