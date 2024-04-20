@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Any, Callable
 
 import fastapi
@@ -36,6 +38,10 @@ class FastBase:
             connection.ConnectionConfigure().set_engine(engine)
         elif self.settings.db:
             connection.ConnectionConfigure(self.settings.db).create_and_set_engine()
+
+    def config_sync_db(self) -> FastBase:
+        connection.SyncConnectionConfigure(self.settings.db).create_and_set_engine()
+        return self
 
     def add_cors(self, cors_config: config.CorsConfig):
         self.fast_app.add_middleware(
