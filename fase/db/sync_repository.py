@@ -1,25 +1,17 @@
-from contextlib import asynccontextmanager
-from typing import Any
-from typing import AsyncGenerator
-from typing import Generic
-from typing import Sequence
-from typing import Type
-from typing import TypeVar
+from typing import Any, Generic, Sequence, Type, TypeVar
 
 import fastapi
 import sqlalchemy
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.orm import DeclarativeBase, Session
 
-from fase.db import connection
 from fase.db import deps
 
-T = TypeVar("T", bound="Repository")
+T = TypeVar("T", bound="SyncRepository")
 RepositoryModel = TypeVar("RepositoryModel", bound=DeclarativeBase)
-RepositoryClass = TypeVar("RepositoryClass", bound="Repository")
+RepositoryClass = TypeVar("RepositoryClass", bound="SyncRepository")
 
 
-class Repository(Generic[RepositoryModel]):
+class SyncRepository(Generic[RepositoryModel]):
     """
     Note:
         Repository doesn't commit by default
@@ -29,7 +21,7 @@ class Repository(Generic[RepositoryModel]):
 
     def __init__(
         self,
-        session: AsyncSession,
+        session: Session,
         model_class: Type[RepositoryModel] | None = None,
     ):
         self.session = session
@@ -42,42 +34,22 @@ class Repository(Generic[RepositoryModel]):
 
     @classmethod
     def dep(cls: Type[T], model_class: Type[RepositoryModel] | None = None):
-        async def dependency(session: deps.Session):
+        def dependency(session: deps.SyncSession):
             crud = cls(session=session, model_class=model_class)
             yield crud
-            await crud.commit()
+            crud.commit()
 
         return fastapi.Depends(dependency)
 
-    # @property
-    # def session(self) -> AsyncSession:
-    #     if self._session is None:
-    #         raise ValueError("session is None")
-    #     return self._session
+    def commit(self):
+        self.session.commit()
 
-    # @asynccontextmanager
-    # async def begin(self: RepositoryClass) -> AsyncGenerator[RepositoryClass, None]:
-    #     if self._session is not None:
-    #         yield self
-    #         await self.commit()
-    #     else:
-    #         async with connection.session() as session:
-    #             self._session = session
-    #             try:
-    #                 yield self
-    #             finally:
-    #                 await self.close()
-    #                 self._session = None
+    def close(self):
+        self.commit()
+        self.session.close()
 
-    async def commit(self):
-        await self.session.commit()
-
-    async def close(self):
-        await self.commit()
-        await self.session.close()
-
-    async def refresh(self, model: RepositoryModel):
-        await self.session.refresh(model)
+    def refresh(self, model: RepositoryModel):
+        self.session.refresh(model)
 
     def create_model(self, **kwargs) -> RepositoryModel:
         model = self._model_class(**kwargs)
@@ -87,12 +59,7 @@ class Repository(Generic[RepositoryModel]):
         self.session.add(data)
         return data
 
-    # async def createall(self, all_data: list[CrudModel]) -> None:
-    #     async with anyio.create_task_group() as tg:
-    #         for data in all_data:
-    #             tg.start_soon(self.create, data)
-
-    async def select(
+    def select(
         self,
         options: list | None = None,
         filters: list | None = None,
@@ -109,9 +76,9 @@ class Repository(Generic[RepositoryModel]):
             .where(*where)
             .options(*options)
         )
-        return await self.session.execute(stmt)
+        return self.session.execute(stmt)
 
-    async def read(
+    def read(
         self,
         options: list | None = None,
         filters: list | None = None,
@@ -119,12 +86,12 @@ class Repository(Generic[RepositoryModel]):
         **kwargs: Any,
     ) -> RepositoryModel | None:
         return (
-            (await self.select(options=options, filters=filters, where=where, **kwargs))
+            (self.select(options=options, filters=filters, where=where, **kwargs))
             .scalars()
             .one_or_none()
         )
 
-    async def readall(
+    def readall(
         self,
         options: list | None = None,
         filters: list | None = None,
@@ -133,7 +100,7 @@ class Repository(Generic[RepositoryModel]):
     ) -> Sequence[RepositoryModel]:
         return (
             (
-                await self.select(
+                self.select(
                     options=options,
                     filters=filters,
                     where=where,
@@ -146,14 +113,3 @@ class Repository(Generic[RepositoryModel]):
 
     def update(self, data: RepositoryModel) -> RepositoryModel:
         return data
-
-    # async def update_or_create(self, data: CrudModel) -> None:
-    #     await data.update_or_create()
-
-    # async def delete(self, data: CrudModel) -> None:
-    #     await data.delete()
-
-    # async def deleteall(self, all_data: list[CrudModel]) -> None:
-    #     async with anyio.create_task_group() as tg:
-    #         for data in all_data:
-    #             tg.start_soon(self.delete, data)
