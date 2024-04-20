@@ -16,6 +16,10 @@ class DBConfig(abc.ABC):
     def get_url(self) -> str:
         pass
 
+    @abc.abstractmethod
+    def get_sync_url(self) -> str:
+        pass
+
 
 @dataclass
 class PostgresConfig(DBConfig):
@@ -25,16 +29,28 @@ class PostgresConfig(DBConfig):
     username: str
     password: str
 
+    def get_url_with_engine(self, engine: str) -> str:
+        return f"{engine}://{self.username}:{self.password}@{self.host}:{self.port}/{self.name}"
+
     def get_url(self) -> str:
-        return f"postgresql+asyncpg://{self.username}:{self.password}@{self.host}:{self.port}/{self.name}"
+        return self.get_url_with_engine(engine="postgresql+asyncpg")
+
+    def get_sync_url(self) -> str:
+        return self.get_url_with_engine(engine="postgresql+psycopg2")
 
 
 @dataclass
 class SqliteConfig(DBConfig):
     path: str
 
+    def get_url_with_engine(self, engine: str) -> str:
+        return f"{engine}:///{self.path}"
+
     def get_url(self) -> str:
-        return f"sqlite+aiosqlite:///{self.path}"
+        return self.get_url_with_engine("sqlite+aiosqlite")
+
+    def get_sync_url(self) -> str:
+        return self.get_url_with_engine("sqlite")
 
 
 @dataclass
