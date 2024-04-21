@@ -149,7 +149,7 @@ def init_logging(level: int | str, file_path: str = "/tmp"):
     console_level = level
     console_handler = logging.StreamHandler(stream=sys.stdout)
     console_handler.setLevel(console_level)
-    console_format = "[%(asctime)s]  %(name)s %(levelname)-8s  %(message)s [%(funcName)s::%(lineno)d]"
+    console_format = "[%(asctime)s] %(levelname)-8s %(name)s %(message)s [%(funcName)s::%(lineno)d]"
     colored_formatter = ColorizedArgsFormatter(console_format)
     console_handler.setFormatter(colored_formatter)
     root_logger.addHandler(console_handler)

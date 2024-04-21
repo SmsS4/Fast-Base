@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import dynaconf
 
 
-class DBType(enum.StrEnum):
+class DBType(str, enum.Enum):
     SQLITE = "sqlite"
     POSTGRES = "postgres"
 
