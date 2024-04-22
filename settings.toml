@@ -12,3 +12,9 @@ port = "5432"
 username = "postgres"
 password = "postgres"
 name = 'postgres'
+
+
+[default.cors]
+allow_origins = ['*']
+allow_methods = ['*']
+allow_headers = ['*']
