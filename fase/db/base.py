@@ -1,10 +1,9 @@
+from datetime import datetime
 from typing import ForwardRef
-from typing import Type
-from typing import TypeVar
 
 import sqlalchemy
 from sqlalchemy import orm
-from sqlalchemy import types
+from sqlalchemy import sql
 
 
 class Base(orm.DeclarativeBase):
@@ -13,18 +12,17 @@ class Base(orm.DeclarativeBase):
 
 @orm.declarative_mixin
 class TimeStamp:
-    created_at = sqlalchemy.Column(
-        types.DateTime,
-        server_default=sqlalchemy.func.now(),
+    created_at: orm.Mapped[datetime] = orm.mapped_column(
+        sqlalchemy.DateTime(timezone=True), server_default=sql.func.now()
     )
-    updated_at = sqlalchemy.Column(
-        types.DateTime,
-        onupdate=sqlalchemy.func.now(),
+    updated_at: orm.Mapped[datetime] = orm.mapped_column(
+        sqlalchemy.DateTime(timezone=True),
+        server_default=sql.func.now(),
+        onupdate=sql.func.current_timestamp(),
     )
 
 
 ClassNameAsTableNameFR = ForwardRef("ClassNameAsTableName")
-
 
 
 @orm.declarative_mixin
