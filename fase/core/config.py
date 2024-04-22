@@ -141,7 +141,6 @@ class TomlFileDynaConfConfigBuilder:
 
     def from_toml(self, paths: list[str]) -> dynaconf.base.Settings:
         return dynaconf.Dynaconf(
-            envvar_prefix="FASE",
             settings_files=paths,
             environments=True,
             lowercase_read=False,
