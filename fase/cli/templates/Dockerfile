@@ -29,4 +29,5 @@ EXPOSE 80
 
 RUN  . /venv/bin/activate
 
-CMD ["python", "./src/main.py"]
+ENTRYPOINT ["/bin/sh", "-c"]
+CMD [". /venv/bin/activate && python -m src.main"]
