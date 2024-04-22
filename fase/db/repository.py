@@ -1,17 +1,10 @@
-from contextlib import asynccontextmanager
-from typing import Any
-from typing import AsyncGenerator
-from typing import Generic
-from typing import Sequence
-from typing import Type
-from typing import TypeVar
+from typing import Any, Generic, Type, TypeVar
 
 import fastapi
 import sqlalchemy
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import DeclarativeBase
 
-from fase.db import connection
 from fase.db import deps
 
 T = TypeVar("T", bound="Repository")
@@ -145,6 +138,10 @@ class Repository(Generic[RepositoryModel]):
         )
 
     def update(self, data: RepositoryModel) -> RepositoryModel:
+        return data
+
+    async def create_or_update(self, data: RepositoryModel) -> RepositoryModel:
+        await self.session.merge(data)
         return data
 
     # async def update_or_create(self, data: CrudModel) -> None:
