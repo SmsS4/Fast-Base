@@ -130,8 +130,8 @@ class Repository(Generic[RepositoryModel]):
         filters: list | None = None,
         where: list | None = None,
         **kwargs: Any,
-    ) -> Sequence[RepositoryModel]:
-        return (
+    ) -> list[RepositoryModel]:
+        return list(
             (
                 await self.select(
                     options=options,
