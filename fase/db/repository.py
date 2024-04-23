@@ -144,6 +144,15 @@ class Repository(Generic[RepositoryModel]):
         await self.session.merge(data)
         return data
 
+    async def count(self, filters: list | None = None, where: list | None = None) -> int:
+        if not filters:
+            filters = []
+        if not where:
+            where = []
+        query = sqlalchemy.select(sqlalchemy.func.count()).select_from(self._model_class).filter(*filters).where(*where)
+        result = await self.session.scalar(query)
+        return result # type: ignore
+
     # async def update_or_create(self, data: CrudModel) -> None:
     #     await data.update_or_create()
 
