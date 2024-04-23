@@ -18,6 +18,7 @@ itsdangerous = "^2.1.2"
 aiosqlite = "^0.20.0"
 typer = "^0.12.3"
 alembic = "^1.13.1"
+psycopg2 = "^2.9.9"
 
 
 [build-system]
