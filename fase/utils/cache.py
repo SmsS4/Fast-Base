@@ -18,7 +18,7 @@ UNSET = __UNSET()
 
 class Cache(Generic[T]):
     def __init__(self, ttl: timedelta | None) -> None:
-        self.ttl = ttl.seconds if ttl else None
+        self.ttl = ttl.total_seconds() if ttl else None
         self.data: dict[str, tuple[T, float]] = {}
 
     def put(self, key: str, value: T) -> None:
