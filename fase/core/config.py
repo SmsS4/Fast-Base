@@ -28,6 +28,8 @@ class PostgresConfig(DBConfig):
     name: str
     username: str
     password: str
+    pool_size: int
+    max_overflow: int
 
     def get_url_with_engine(self, engine: str) -> str:
         return f"{engine}://{self.username}:{self.password}@{self.host}:{self.port}/{self.name}"
@@ -107,6 +109,8 @@ class DynaConfConfigBuilder:
             name=self.settings.DB.name,
             username=self.settings.DB.username,
             password=self.settings.DB.password,
+            pool_size=self.settings.DB.pool_size,
+            max_overflow=self.settings.DB.max_overflow,
         )
 
     def db_sqlite_from_config(self) -> SqliteConfig:

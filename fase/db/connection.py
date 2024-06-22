@@ -3,12 +3,16 @@ from contextlib import asynccontextmanager, contextmanager
 from typing import Generator
 
 import sqlalchemy
-from sqlalchemy import Engine, exc
-from sqlalchemy.ext.asyncio import (AsyncEngine, AsyncSession,
-                                    async_sessionmaker, create_async_engine)
-from sqlalchemy.orm import Session, sessionmaker
 
 from fase.core import config
+from sqlalchemy import Engine, exc
+from sqlalchemy.ext.asyncio import (
+    async_sessionmaker,
+    AsyncEngine,
+    AsyncSession,
+    create_async_engine,
+)
+from sqlalchemy.orm import Session, sessionmaker
 
 sync_session_maker = sessionmaker()
 async_session_maker = async_sessionmaker()
@@ -69,14 +73,22 @@ class ConnectionConfigure:
         settings: config.DBConfig | str | None = None,
     ) -> None:
         self.url = get_url(settings)
+        self.settings = settings
 
     def create_engine(self) -> AsyncEngine:
         if self.url is None:
             raise ValueError("url is empty")
+        kwargs = {}
+        if isinstance(self.settings, config.PostgresConfig):
+            kwargs = {
+                "pool_size": self.settings.pool_size,
+                "max_overflow": self.settings.max_overflow,
+            }
         return create_async_engine(
             self.url,
             pool_recycle=1800,
             pool_pre_ping=True,
+            **kwargs,
         )
 
     def set_engine(self, engine: AsyncEngine) -> None:
