@@ -15,7 +15,11 @@ from sqlalchemy.ext.asyncio import (
 from sqlalchemy.orm import Session, sessionmaker
 
 sync_session_maker = sessionmaker()
-async_session_maker = async_sessionmaker()
+async_session_maker = async_sessionmaker(
+    autoflush=False,
+    autocommit=False,
+    expire_on_commit=False,
+)
 
 
 @asynccontextmanager
