@@ -137,7 +137,8 @@ class Repository(Generic[RepositoryModel]):
             .all()
         )
 
-    def update(self, data: RepositoryModel) -> RepositoryModel:
+    def add_to_session(self, data: RepositoryModel) -> RepositoryModel:
+        self.session.add(data)
         return data
 
     async def create_or_update(self, data: RepositoryModel) -> RepositoryModel:
